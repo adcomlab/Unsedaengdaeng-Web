@@ -16,6 +16,14 @@ app.get('/terms', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'terms.html'));
 });
 
+app.get('/account-deletion', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'account-deletion.html'));
+});
+
+app.get('/data-deletion', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'data-deletion.html'));
+});
+
 // SPA 라우팅 — 나머지 경로를 index.html로
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
