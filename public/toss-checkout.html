@@ -59,12 +59,13 @@
         const tossPayments = TossPayments(clientKey);
         const widgets = tossPayments.widgets({ customerKey });
         await widgets.setAmount({ currency: 'KRW', value: amount });
-        await Promise.all([
-          widgets.renderPaymentMethods({ selector: '#payment-method', variantKey }),
-          widgets.renderAgreement({ selector: '#agreement', variantKey: 'AGREEMENT' }).catch(() =>
-            widgets.renderAgreement({ selector: '#agreement' })
-          ),
-        ]);
+        await widgets.renderPaymentMethods({ selector: '#payment-method', variantKey });
+        // 약관 위젯은 현재 토스 대시보드에 등록된 variantKey 없을 수 있어 시도 후 실패해도 무시
+        try {
+          await widgets.renderAgreement({ selector: '#agreement', variantKey: 'AGREEMENT' });
+        } catch (_) {
+          document.getElementById('agreement').style.display = 'none';
+        }
         btn.disabled = false;
         btn.addEventListener('click', async () => {
           btn.disabled = true;
