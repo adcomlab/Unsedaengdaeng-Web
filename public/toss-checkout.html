@@ -61,7 +61,9 @@
         await widgets.setAmount({ currency: 'KRW', value: amount });
         await Promise.all([
           widgets.renderPaymentMethods({ selector: '#payment-method', variantKey }),
-          widgets.renderAgreement({ selector: '#agreement', variantKey: 'AGREEMENT' }),
+          widgets.renderAgreement({ selector: '#agreement', variantKey: 'AGREEMENT' }).catch(() =>
+            widgets.renderAgreement({ selector: '#agreement' })
+          ),
         ]);
         btn.disabled = false;
         btn.addEventListener('click', async () => {
