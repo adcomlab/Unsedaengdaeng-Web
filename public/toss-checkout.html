@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>결제 진행 중 | 운세댕댕</title>
+  <script src="https://js.tosspayments.com/v2/standard"></script>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif; margin: 0; background: #F8F7FF; color: #111827; }
+    .container { max-width: 540px; margin: 0 auto; padding: 16px; }
+    .header { padding: 12px 4px 16px; }
+    .header h1 { font-size: 18px; font-weight: 700; margin: 0; }
+    .meta { color: #6B7280; font-size: 13px; margin-top: 2px; }
+    #payment-method, #agreement { background: #FFFFFF; border-radius: 12px; padding: 8px; margin: 8px 0; box-shadow: 0 2px 8px rgba(107, 78, 255, 0.05); }
+    .pay-btn { width: 100%; height: 52px; background: #6B4EFF; color: white; border: none; border-radius: 14px; font-size: 16px; font-weight: 700; margin-top: 16px; cursor: pointer; }
+    .pay-btn:disabled { background: #E5E7EB; color: #9CA3AF; cursor: not-allowed; }
+    .err { color: #EF4444; padding: 12px; background: #FEE2E2; border-radius: 10px; margin-top: 12px; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1 id="title">결제 진행 중...</h1>
+      <p class="meta" id="meta"></p>
+    </div>
+    <div id="payment-method"></div>
+    <div id="agreement"></div>
+    <button class="pay-btn" id="pay-btn" disabled>결제하기</button>
+    <div id="err"></div>
+  </div>
+
+  <script>
+    (async () => {
+      const params = new URLSearchParams(window.location.search);
+      const clientKey = params.get('clientKey');
+      const customerKey = params.get('customerKey');
+      const productId = params.get('productId');
+      const orderId = params.get('orderId');
+      const orderName = params.get('orderName') || '운세댕댕 간식';
+      const amount = parseInt(params.get('amount') || '0', 10);
+      const variantKey = params.get('variantKey') || 'DEFAULT';
+
+      const errEl = document.getElementById('err');
+      const titleEl = document.getElementById('title');
+      const metaEl = document.getElementById('meta');
+      const btn = document.getElementById('pay-btn');
+
+      if (!clientKey || !customerKey || !orderId || !amount) {
+        errEl.className = 'err';
+        errEl.textContent = '결제 정보가 부족합니다.';
+        return;
+      }
+
+      titleEl.textContent = orderName;
+      metaEl.textContent = `₩${amount.toLocaleString()}`;
+      btn.textContent = `₩${amount.toLocaleString()} 결제하기`;
+
+      try {
+        const tossPayments = TossPayments(clientKey);
+        const widgets = tossPayments.widgets({ customerKey });
+        await widgets.setAmount({ currency: 'KRW', value: amount });
+        await Promise.all([
+          widgets.renderPaymentMethods({ selector: '#payment-method', variantKey }),
+          widgets.renderAgreement({ selector: '#agreement', variantKey: 'AGREEMENT' }),
+        ]);
+        btn.disabled = false;
+        btn.addEventListener('click', async () => {
+          btn.disabled = true;
+          try {
+            await widgets.requestPayment({
+              orderId,
+              orderName,
+              successUrl: `${window.location.origin}/payment/toss-callback?productId=${encodeURIComponent(productId)}`,
+              failUrl: `${window.location.origin}/payment/toss-fail`,
+            });
+          } catch (e) {
+            errEl.className = 'err';
+            errEl.textContent = e?.message || '결제 요청 실패';
+            btn.disabled = false;
+          }
+        });
+      } catch (e) {
+        errEl.className = 'err';
+        errEl.textContent = '결제 위젯 초기화 실패: ' + (e?.message || e);
+      }
+    })();
+  </script>
+</body>
+</html>
