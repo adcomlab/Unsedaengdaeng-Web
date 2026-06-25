@@ -4,10 +4,20 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 8080;
 
-// 정적 파일 서빙
+app.get('/payment-config.js', (req, res) => {
+  const tossClientKey =
+    process.env.TOSS_CLIENT_KEY_PUBLIC ||
+    process.env.TOSS_CLIENT_KEY ||
+    '';
+
+  res.type('application/javascript');
+  res.send(
+    `window.__UNSEDD_PAYMENT_CONFIG__ = ${JSON.stringify({ tossClientKey })};`,
+  );
+});
+
 app.use(express.static(path.join(__dirname, 'public')));
 
-// 정적 HTML 페이지 (.html 없이 접근 가능)
 app.get('/privacy', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'privacy.html'));
 });
@@ -24,7 +34,6 @@ app.get('/data-deletion', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'data-deletion.html'));
 });
 
-// SPA 라우팅 — 나머지 경로를 index.html로
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });

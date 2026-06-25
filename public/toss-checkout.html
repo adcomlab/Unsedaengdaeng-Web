@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>결제 진행 중 | 운세댕댕</title>
+  <script src="/payment-config.js"></script>
   <script src="https://js.tosspayments.com/v2/standard"></script>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif; margin: 0; background: #F8F7FF; color: #111827; }
@@ -46,19 +47,21 @@
       <div class="icon">✓</div>
       <h2>결제가 완료되었어요</h2>
       <p id="success-meta"></p>
-      <p>잔액이 충전되었습니다</p>
-      <button class="home-btn" onclick="goHome()">앱으로 돌아가기</button>
+      <p>엽전이 충전되었습니다.</p>
+      <button class="home-btn" onclick="goHome()">홈으로 돌아가기</button>
     </div>
 
     <div id="fail-view" class="success" style="display:none;">
-      <div class="icon" style="background:#EF4444;">×</div>
+      <div class="icon" style="background:#EF4444;">!</div>
       <h2>결제가 실패했어요</h2>
       <p id="fail-meta"></p>
-      <button class="home-btn" style="background:#6B7280;" onclick="goHome()">앱으로 돌아가기</button>
+      <button class="home-btn" style="background:#6B7280;" onclick="goHome()">홈으로 돌아가기</button>
     </div>
   </div>
 
   <script>
+    const SAFE_PAYMENT_SETUP_MESSAGE = '결제 설정을 확인 중입니다. 잠시 후 다시 시도해 주세요.';
+
     function show(id) {
       ['checkout-view', 'loading-view', 'success-view', 'fail-view'].forEach(v => {
         document.getElementById(v).style.display = (v === id ? 'block' : 'none');
@@ -68,8 +71,22 @@
     function goHome() { window.location.href = '/'; }
 
     function getAccessToken() {
-      // Flutter 앱이 redirect 직전에 sessionStorage에 저장한 토큰
       return sessionStorage.getItem('access_token') || localStorage.getItem('access_token');
+    }
+
+    function configuredClientKey(params) {
+      const runtimeKey = window.__UNSEDD_PAYMENT_CONFIG__?.tossClientKey || '';
+      return runtimeKey || params.get('clientKey') || '';
+    }
+
+    function isValidClientKey(clientKey) {
+      if (!clientKey) return false;
+      if (clientKey.includes('your-') || clientKey.includes('placeholder')) return false;
+      return /^(test|live)_gck_/.test(clientKey);
+    }
+
+    function isTestClientKey(clientKey) {
+      return clientKey.startsWith('test_gck_');
     }
 
     async function confirmPayment(productId, paymentKey, orderId, amount) {
@@ -87,7 +104,7 @@
         const data = await res.json();
         if (!res.ok) throw new Error(data?.message || '결제 검증 실패');
         document.getElementById('success-meta').textContent =
-          `₩${parseInt(amount, 10).toLocaleString()}`;
+          `${parseInt(amount, 10).toLocaleString()}원`;
         show('success-view');
       } catch (e) {
         document.getElementById('fail-meta').textContent = e.message || '알 수 없는 오류';
@@ -103,7 +120,6 @@
     (async () => {
       const params = new URLSearchParams(window.location.search);
 
-      // ── 콜백 모드 (Toss 결제 완료 후 redirect로 돌아옴) ──
       const paymentKey = params.get('paymentKey');
       if (paymentKey) {
         const orderId = params.get('orderId');
@@ -117,20 +133,18 @@
         return;
       }
 
-      // ── 결제 실패 redirect ──
       const code = params.get('code');
       if (code) {
         failPayment(params.get('message') || `결제 실패 (${code})`);
         return;
       }
 
-      // ── 결제 시작 모드 (위젯 렌더링) ──
       show('checkout-view');
-      const clientKey = params.get('clientKey');
+      const clientKey = configuredClientKey(params);
       const customerKey = params.get('customerKey');
       const productId = params.get('productId');
       const orderId = params.get('orderId');
-      const orderName = params.get('orderName') || '운세댕댕 간식';
+      const orderName = params.get('orderName') || '운세댕댕 엽전';
       const amount = parseInt(params.get('amount') || '0', 10);
       const variantKey = params.get('variantKey') || 'DEFAULT';
 
@@ -139,15 +153,27 @@
       const metaEl = document.getElementById('meta');
       const btn = document.getElementById('pay-btn');
 
-      if (!clientKey || !customerKey || !orderId || !amount) {
+      titleEl.textContent = orderName;
+      metaEl.textContent = `${amount.toLocaleString()}원`;
+      btn.textContent = `${amount.toLocaleString()}원 결제하기`;
+
+      if (!isValidClientKey(clientKey)) {
+        errEl.className = 'err';
+        errEl.textContent = SAFE_PAYMENT_SETUP_MESSAGE;
+        return;
+      }
+
+      if (!customerKey || !orderId || !Number.isInteger(amount) || amount <= 0) {
         errEl.className = 'err';
         errEl.textContent = '결제 정보가 부족합니다.';
         return;
       }
 
-      titleEl.textContent = orderName;
-      metaEl.textContent = `₩${amount.toLocaleString()}`;
-      btn.textContent = `₩${amount.toLocaleString()} 결제하기`;
+      if (location.hostname !== 'localhost' && !location.hostname.startsWith('127.') && isTestClientKey(clientKey)) {
+        errEl.className = 'err';
+        errEl.textContent = SAFE_PAYMENT_SETUP_MESSAGE;
+        return;
+      }
 
       try {
         const tossPayments = TossPayments(clientKey);
@@ -163,7 +189,6 @@
         btn.addEventListener('click', async () => {
           btn.disabled = true;
           try {
-            // successUrl/failUrl 모두 toss-checkout.html로 → SPA 재시작 안 함
             const successUrl = `${window.location.origin}/toss-checkout.html?productId=${encodeURIComponent(productId)}`;
             const failUrl = `${window.location.origin}/toss-checkout.html`;
             await widgets.requestPayment({ orderId, orderName, successUrl, failUrl });
@@ -175,7 +200,7 @@
         });
       } catch (e) {
         errEl.className = 'err';
-        errEl.textContent = '결제 위젯 초기화 실패: ' + (e?.message || e);
+        errEl.textContent = SAFE_PAYMENT_SETUP_MESSAGE;
       }
     })();
   </script>

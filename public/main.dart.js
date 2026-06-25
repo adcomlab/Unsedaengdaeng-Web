@@ -116594,7 +116594,7 @@ if(l!=null&&l.length!==0)v.G.window.sessionStorage.setItem("access_token",l)
 k="ORD"+B.m.mp(Date.now(),36).toUpperCase()
 h=m.a
 g=n.a.d
-j=A.t1(null,null,"/toss-checkout.html",null,null,null,A.ai(["clientKey","test_gck_6BYq7GWPVvNGEDEQRBDIVNE5vbo1","customerKey",h,"productId",g.a,"orderId",k,"orderName",g.c+" ("+g.gPr()+")","amount",B.m.j(n.a.d.r),"variantKey","DEFAULT"],t.N,t.z),null,null)
+j=A.t1(null,null,"/toss-checkout.html",null,null,null,A.ai(["clientKey","runtime_configured","customerKey",h,"productId",g.a,"orderId",k,"orderName",g.c+" ("+g.gPr()+")","amount",B.m.j(n.a.d.r),"variantKey","DEFAULT"],t.N,t.z),null,null)
 g=j.gmF()
 v.G.window.location.href=g
 p=2
