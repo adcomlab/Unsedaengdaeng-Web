@@ -5,10 +5,7 @@ const app = express();
 const PORT = process.env.PORT || 8080;
 
 app.get('/payment-config.js', (req, res) => {
-  const tossClientKey =
-    process.env.TOSS_CLIENT_KEY_PUBLIC ||
-    process.env.TOSS_CLIENT_KEY ||
-    '';
+  const tossClientKey = process.env.TOSS_CLIENT_KEY_PUBLIC || '';
 
   res.type('application/javascript');
   res.send(
