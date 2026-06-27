@@ -1,4 +1,4 @@
-// 운세댕댕 웹 푸시 Service Worker
+// 무료운세댕댕 웹 푸시 Service Worker
 // Flutter Web에서 firebase_messaging 동작을 위해 필요.
 // Firebase Console → Cloud Messaging → Web Push certificates 에서 VAPID 키를 발급받아
 // 빌드 시 --dart-define=FCM_VAPID_KEY=... 로 주입한다.
@@ -20,7 +20,7 @@ const messaging = firebase.messaging();
 // 커스텀 아이콘/데이터 포함을 위해 명시 처리.
 messaging.onBackgroundMessage((payload) => {
   const notification = payload.notification || {};
-  const title = notification.title || '운세댕댕';
+  const title = notification.title || '무료운세댕댕';
   const options = {
     body: notification.body || '',
     icon: '/icons/Icon-192.png',
